@@ -113,6 +113,7 @@ public class User {
 	
 	
 	
+	
 	public void playedTimesPlus() {
 		playedTimes++;
 	}

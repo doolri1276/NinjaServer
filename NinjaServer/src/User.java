@@ -23,6 +23,9 @@ public class User {
 	DataOutputStream dos;
 	
 	boolean isReady;
+	boolean itemReady;
+	
+	int X,Y;
 	
 	
 	//GameRoom room;
@@ -51,6 +54,13 @@ public class User {
 	public DataOutputStream getDos() {	return dos;	}
 	public boolean getIsReady(){	return isReady;	}
 	public User getOpponent() {	return opponent;}
+	public boolean getItemReady(){return itemReady;}
+	public int getX() {
+		return X;
+	}
+	public int getY() {
+		return Y;
+	}
 	
 	
 	public void setUserCode(String userCode) {this.id=userCode;}
@@ -98,9 +108,20 @@ public class User {
 	public void setDos(DataOutputStream dos) {
 		this.dos = dos;
 	}
+	public void setIsReady(boolean s) {
+		isReady=s;
+	}
+	public void setWon(int won){
+		this.won=won;
+	}
 	
-	
-	
+	public void setXY(String x,String y){
+		X=Integer.parseInt(x);
+		Y=Integer.parseInt(y);
+	}
+	public void setItemReady(boolean itemReady) {
+		this.itemReady = itemReady;
+	}
 	
 	
 	
@@ -108,10 +129,20 @@ public class User {
 		playedTimes++;
 	}
 	
+	public void wonTimesPlus() {
+		won++;
+	}
+	
+	public void lostTimesPlus() {
+		lost++;
+	}
+	
 	public String getDBWrite() {
 		
 		return getUserCode()+":"+getID()+":"+getPSW()+":"+getPlayedTimes()+":"+getWon()+":"+getLost()+":"+getWinRate()+":"+getRanking()+":"+"nowhere";
 	}
+	
+	
 	
 	
 }

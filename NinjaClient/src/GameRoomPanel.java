@@ -13,6 +13,7 @@ import java.awt.event.KeyListener;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Random;
 
 import javax.swing.JButton;
 import javax.swing.JPanel;
@@ -65,6 +66,7 @@ public class GameRoomPanel extends JPanel{
 	private Image myImg;
 	private int myX,myY;//내 이미지의 좌표
 	private int myW,myH;//내 이미지의 절반 넓이, 절반 높이
+	private int myRoomX,myRoomY;
 	
 	private int mouseX,mouseY;
 	
@@ -84,6 +86,20 @@ public class GameRoomPanel extends JPanel{
 	Image strAItems;
 	Image strMItems;
 	Image startImg;
+	Image morae;
+	Image [] num;
+	Image number;
+	Image smallMe;
+	Image smallOp;
+	Image smallMetu;
+	Image item;
+	Image itemopa;
+	Image dropItem;
+	
+	
+	
+	int dropX,dropY;
+	int dropDX,dropDY;
 	
 	private Room[][] rooms;
 	
@@ -100,8 +116,12 @@ public class GameRoomPanel extends JPanel{
 	boolean isAlive;
 	boolean startImgshow;
 	boolean roomspickable;
+	boolean secondItem;
+	
 	
 	boolean isRunning;
+	boolean opTimerRunning;
+	boolean myTimerRunning;
 	
 	
 	
@@ -128,11 +148,6 @@ public class GameRoomPanel extends JPanel{
 		attackable=false;
 		movable=false;
 		
-		if(myTurn) {
-			requestTimer();
-			
-			requestItem();
-		}
 		
 		
 		//checkHP죽는지 확인하는거있어야 함...
@@ -142,6 +157,92 @@ public class GameRoomPanel extends JPanel{
 	}
 	
 	public void pickMyPlace() {
+		boolean tmpTurn=myTurn;
+		myTurn=true;
+		pickableAll();
+		roomspickable=true;
+		myTimerRunning=true;
+		new Thread() {
+			@Override
+			public void run() {
+				try {
+					Room pickedRoom;
+					for(int i=19;i>-1;i--) {
+						pickedRoom=checkPicked();
+						if(pickedRoom!=null) {
+							pickedRoom.meExist=true;
+							myTurn=tmpTurn;
+							roomspickable=false;
+							myTimerRunning=false;
+							dos.writeUTF("GAME:FIRSTPICK:"+pickedRoom.getXpos()+":"+pickedRoom.getYpos());
+							dos.flush();
+							
+							return;
+						}//눌렸는지 체크
+						
+						number=num[i/2];
+						//그림 바꾸고
+						Thread.sleep(500);
+						//한번 잠들고
+					}
+					
+					disPickableAll();
+					myTimerRunning=false;
+					Random rnd = new Random();
+					int x=rnd.nextInt(5);
+					int y=rnd.nextInt(5);
+					pickedRoom=rooms[x][y];
+					pickedRoom.meExist=true;
+					myTurn=tmpTurn;
+					dos.writeUTF("GAME:FIRSTPICK:"+pickedRoom.getXpos()+":"+pickedRoom.getYpos());
+					dos.flush();
+				}catch(Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}.start();
+		
+		
+	}
+	
+	public Room checkPicked(){
+		for(int i=0;i<5;i++) {
+			for(int j=0;j<5;j++) {
+				if(rooms[i][j].isPicked) {
+					rooms[i][j].isPicked=false;
+					return rooms[i][j];
+				}
+			}
+		}
+		return null;
+	}
+	
+	public void pickableAll() {
+		for(int i=0;i<5;i++) {
+			for(int j=0;j<5;j++) {
+				rooms[i][j].pickable=true;
+			}
+		}
+	}
+	
+	public void disPickableAll() {
+		for(int i=0;i<5;i++) {
+			for(int j=0;j<5;j++) {
+				rooms[i][j].pickable=false;
+			}
+		}
+	}
+	
+	public void setOpoLocation(int x,int y) {
+		for(int i=0;i<5;i++)
+			for(int j=0;j<5;j++)
+				rooms[i][j].opExist=false;
+		rooms[x][y].opExist=true;
+	}
+	
+	public void doMyTurn() {
+		secondItem=true;
+		requestItem();
 		
 	}
 	
@@ -176,6 +277,7 @@ public class GameRoomPanel extends JPanel{
 	public void requestTimer() {
 		try {
 			dos.writeUTF("GAME:REQUEST:TIMER");
+			dos.flush();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -186,15 +288,18 @@ public class GameRoomPanel extends JPanel{
 	
 	void requestItem() {
 		try {
+			
+			Thread.sleep(1000);
 			dos.writeUTF("GAME:REQUEST:ITEM");
-		} catch (IOException e) {
+			dos.flush();
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
 	public void putItem(int xi,int yi,int type) {
-		
+		itemDropTime=true;
 		Item item=new Item();
 		switch(type) {
 		case 0:item=new APowerUp();break;
@@ -208,10 +313,81 @@ public class GameRoomPanel extends JPanel{
 		case 8:item=new PEnergy();break;
 		case 9:item=new PSeeThrough();break;	
 		}
-		
+		rooms[xi][yi].setItemExist(true);
 		rooms[xi][yi].addItem(item);
+		if(myTurn) {
+			if(secondItem) {
+				secondItem=false;
+				requestItem();
+			}
+			String msg="GAME:REQUEST:TIMER:ACTION1";
+			doMyAction();
+		}
 		
 	}
+	
+	public void doMyAction(){
+		
+//		boolean myTurn;
+//		boolean attackable;
+//		boolean movable;
+//		boolean attackClicking;
+//		boolean moveClicking;
+//		boolean itemDropTime;
+//		boolean isAlive;
+//		boolean startImgshow;
+//		boolean roomspickable;
+//		boolean secondItem;
+//		
+//		
+//		boolean isRunning;
+//		boolean opTimerRunning;
+//		boolean myTimerRunning;
+		
+		System.out.println("내 액션 수행");
+		attackable=true;
+		movable=true;
+		myTimerRunning=true;
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	}
+	
+	
+	class TimerThread extends Thread{
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			super.run();
+		}
+	}
+	
+	public void moveItemDrop(){
+		int wh=32;
+		dropX+=dropDX;
+		dropY+=dropDY;
+		if(dropX>width/2) {
+			dropX=-40; dropY=100;
+			dropDX=10;  dropDY=0;
+			itemDropTime=false;
+			//if(myTurn) makeMyMove();
+		}
+		
+		if(dropX>width/4) {dropDX=10;dropDY=5;}
+		else if(dropX>width/3) {dropDX=7;dropDY=7;}
+		else if(dropX>width/2) {dropDX=5;dropDY=10;}
+		
+		
+		
+	}
+	
+	
 	
 
 	public GameRoomPanel(String roomNum, String title, User me,int width,int height,DataOutputStream dos,Main_Client main_Client) {
@@ -237,11 +413,15 @@ public class GameRoomPanel extends JPanel{
 		
 		rooms=new Room[5][];
 		
+		int xxx=114,yyy=135;
 		for(int i=0;i<5;i++) {
 			rooms[i]=new Room[5];
+			xxx=114;
 			for(int j=0;j<5;j++) {
-				rooms[i][j]=new Room(i,j);
+				rooms[i][j]=new Room(i,j,xxx,yyy);
+				xxx+=70;
 			}
+			yyy+=70;
 		}
 		
 		myAttackItems=new ArrayList<>();
@@ -259,6 +439,8 @@ public class GameRoomPanel extends JPanel{
 		myX=520;
 		myY=410;
 		
+		smallMe=myImg.getScaledInstance(32, 64, Image.SCALE_SMOOTH);
+		
 		imgBackground=toolkit.getImage("images/sky_bg.jpg");
 		imgBackground=imgBackground.getScaledInstance(width, height-200, Image.SCALE_SMOOTH);
 		openedDoor=toolkit.getImage("images/opened.png");
@@ -267,10 +449,17 @@ public class GameRoomPanel extends JPanel{
 		closedDoor=toolkit.getImage("images/closed.png");
 		closedDoor=closedDoor.getScaledInstance(64, 64, Image.SCALE_SMOOTH);
 		
+		itemopa=toolkit.getImage("images/itemopa.png");
+		
 		opImage=toolkit.getImage("images/ninja_bluebody.png");
 		opImage=opImage.getScaledInstance(64, 128, Image.SCALE_SMOOTH);
 		opX=52;  opY=410;
 		opW=32;  opH=64;
+		
+		smallOp=opImage.getScaledInstance(32, 64, Image.SCALE_SMOOTH);
+		
+		smallMetu=toolkit.getImage("images/ninjaopa.png");
+		smallMetu=smallMetu.getScaledInstance(32, 64, Image.SCALE_SMOOTH);
 		
 		itemDoor=toolkit.getImage("images/item.png");
 		itemDoor=itemDoor.getScaledInstance(64, 64, Image.SCALE_SMOOTH);
@@ -295,6 +484,19 @@ public class GameRoomPanel extends JPanel{
 		strMItems=strMItems.getScaledInstance(42, 29, Image.SCALE_SMOOTH);
 		
 		startImg=toolkit.getImage("images/start.png");
+		
+		morae=toolkit.getImage("images/morae.png");
+		
+		dropItem=itemDoor;
+		dropX=-40; dropY=100;
+		dropDX=10;  dropDY=0;
+		
+		num=new Image[10];
+		for(int i=0;i<10;i++) {
+			num[i]=toolkit.getImage("images/num"+(i+1)+".png").getScaledInstance(32, 32, Image.SCALE_SMOOTH);
+		}
+		
+		
 		
 		
 		JPanel chatPlace=new JPanel();
@@ -374,6 +576,7 @@ public class GameRoomPanel extends JPanel{
 				}
 				try {
 					dos.writeUTF(msg);
+					dos.flush();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -395,6 +598,7 @@ public class GameRoomPanel extends JPanel{
 			
 				try {
 					dos.writeUTF(me.getCurrentLocation()+":EXIT");
+					dos.flush();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -402,6 +606,19 @@ public class GameRoomPanel extends JPanel{
 				//내가 있는 장소를 waiting으로 변경, 이걸 서버도 알아야 함.
 				//더불어 패널 변경.
 				me.setCurrentLocation("WAITING");
+				myTurn=false;
+				attackable=false;
+				movable=false;
+				attackClicking=false;
+				moveClicking=false;
+				itemDropTime=false;
+				isAlive=false;
+				startImgshow=false;
+				roomspickable=false;
+				
+				isRunning=false;
+				opTimerRunning=false;
+				myTimerRunning=false;
 				main_Client.changePanel();
 				
 			}
@@ -448,6 +665,7 @@ public class GameRoomPanel extends JPanel{
 		String msg=roomNum+":CHAT:"+me.getID()+":"+tf_chat.getText();
 		try {
 			dos.writeUTF(msg);
+			dos.flush();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -469,36 +687,62 @@ public class GameRoomPanel extends JPanel{
 		g.setColor(Color.WHITE);
 		g.fillRect(109, 130, 356, 356);
 		
-		g.drawImage(closedDoor, doorX-32, doorY-32, this);
+		
 		
 		for(int i=0;i<5;i++) {
 			for(int j=0;j<5;j++) {
-				if(rooms[i][j].isOpened) {
-					if(rooms[i][j].itemExist) {
-						g.drawImage(itemDoor, doorX-32, doorY-32, this);
-					}else {
-						g.drawImage(openedDoor, doorX-32, doorY-32, this);
+				Room room=rooms[i][j];
+				if(room.isOpened) {
+					g.drawImage(openedDoor, room.getX(), room.getY(), this);
+					
+					
+					
+					if(room.meExist) {
+						g.drawImage(smallMe, room.getX()+16, room.getY(), this);
+					}
+					
+					if(room.opExist) {
+						g.drawImage(smallOp, room.getX()+16, room.getY(), this);
+					}
+					
+					if(room.itemExist) {
+						g.drawImage(itemDoor, room.getX(), room.getY(), this);
+					}
+					
+				}else {
+					g.drawImage(closedDoor, room.getX(), room.getY(), this);
+					
+					if(room.meExist) {
+					g.drawImage(smallMetu, room.getX()+16, room.getY(), this);
+					
+						if(room.itemExist) {
+							g.drawImage(itemopa, room.getX(), room.getY(), this);
+						}
 					}
 					
 					
-				}else {
-					g.drawImage(closedDoor, doorX-32, doorY-32, this);
-					doorX+=70;
-				}
-				if(rooms[i][j].pickable) {
-					g.setColor(Color.CYAN);
-					g.fillRect(doorX-32-71, doorY-32, 66, 4);
-					g.fillRect(doorX-32-71, doorY+28, 66, 4);
-					g.fillRect(doorX-32-71, doorY-32, 4, 64);
-					g.fillRect(doorX-32-8, doorY-32, 4, 64);
+					
+					
 					
 				}
+				
+				//System.out.println("room"+i+" "+j+" : " +(doorX-32)+","+(doorY-32)+"에 그림");
+				
+				
+				if(room.pickable) {
+					g.setColor(Color.CYAN);
+					g.fillRect(room.getX()-1, room.getY(), 66, 4);
+					g.fillRect(room.getX()-1, room.getY()+60, 66, 4);
+					g.fillRect(room.getX()-1, room.getY(), 4, 64);
+					g.fillRect(room.getX()+62, room.getY(), 4, 64);
+					
+				}
+				
 			}
-			doorX=146;
-			doorY+=70;
+			
 			
 		}
-		doorY=170;
+		
 		
 		g.drawImage(myImg, myX-myW, myY-myH, this);
 		g.drawImage(opImage, opX-opW, opY-opH, this);
@@ -573,6 +817,19 @@ public class GameRoomPanel extends JPanel{
 			System.out.println("스타트 이미지 그렷다!!");
 		}
 		
+		if(opTimerRunning) {
+			g.drawImage(morae, 25, 285, this);
+			g.drawImage(number, 36, 256, this);
+		}
+			
+		if(myTimerRunning) {	
+			g.drawImage(morae, 493, 285, this);
+			g.drawImage(number, 504, 256, this);
+		}
+		
+		if(itemDropTime) {
+			g.drawImage(dropItem, dropX-32, dropY-32, this);
+		}
 		
 		
 	}
@@ -584,10 +841,15 @@ public class GameRoomPanel extends JPanel{
 			while(isRunning) {
 				try {
 					
+					if(itemDropTime) {
+						
+						
+						moveItemDrop();
+					}
 					//할일하고!
 					repaint();
-					System.out.println("그렸다.");
-					Thread.sleep(100);
+					//System.out.println("그렸다.");
+					Thread.sleep(20);
 					
 				}catch(Exception e) {
 					e.printStackTrace();

@@ -432,11 +432,13 @@ public class Main_Server extends JFrame {
 								if(rnd==0) {
 									me.playedTimesPlus();
 									me.opponent.playedTimesPlus();
-									
+									room.isPlaying=true;
 									dos.writeUTF("GAME:START:FIRST");
+									dos.flush();
 									sendOpoMsg("GAME:START:LAST");
 								}else {
 									dos.writeUTF("GAME:START:LAST");
+									dos.flush();
 									sendOpoMsg("GAME:START:FIRST");
 								}
 								
@@ -468,18 +470,37 @@ public class Main_Server extends JFrame {
 					
 				}else if(msg[1].equals("REQUEST")) {
 					if(msg[2].equals("ITEM")) {
-						String item=room.getRndItem();//GAME:ITEM:X위치:Y위치:아이템종류
+						roomAppend(me.getCurrentLocation(), "아이템 리퀘스트하러왔다");
+						//String item=room.getRndItem();//GAME:ITEM:X위치:Y위치:아이템종류
+						String item=getRndItem();
+						roomAppend(me.getCurrentLocation(), "아이템 구함"+item);
 						try {
 							dos.writeUTF(item);
+							roomAppend(me.getCurrentLocation(), "나에게 보냄");
+							dos.flush();
+							sendOpoMsg(item);
+							roomAppend(me.getCurrentLocation(), "아이템 보냄");
 						} catch (IOException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						
-						sendOpoMsg(item);
+						
 					}else if(msg[2].equals("TIMER")) {
 						
 					}
+				}else if(msg[1].equals("FIRSTPICK")) {
+					
+					me.itemReady=true;
+					me.setXY(msg[2], msg[3]);
+					if(me.opponent.getItemReady()) {
+						me.itemReady=false;
+						me.getOpponent().setItemReady(false);
+						sendOpoMsg(msg[0]+":"+msg[1]+":"+me.getX()+":"+me.getY());
+						sendMsg(msg[0]+":"+msg[1]+":"+me.getOpponent().getX()+":"+me.getOpponent().getY());
+						
+					}
+					
 				}
 			}
 			
@@ -521,6 +542,21 @@ public class Main_Server extends JFrame {
 				}
 			
 
+			}
+			
+			public String getRndItem() {
+				Random rnd=new Random();
+				String iteminfo="GAME:ITEM:";
+				
+				int x=rnd.nextInt(5);
+				int y=rnd.nextInt(5);
+				
+				int item=rnd.nextInt(10);
+				iteminfo+=x+":"+y+":"+item;
+				
+				return iteminfo;
+				
+				
 			}
 			
 			public void caseSignin() {
@@ -633,10 +669,13 @@ public class Main_Server extends JFrame {
 							me.setCurrentLocation("ROOM"+num);
 							
 							dos.writeUTF("ROOM0:ROOM"+num+":"+title);//만드는데 성공했고 그 번호는 num번이란다.
+							dos.flush();
 							String roomNum="ROOM"+num;
 							roomAppend(roomNum,"[SERVER_CREATE] "+me.id+"님께서 "+num+"번방 개설");
 							dos.writeUTF("ROOM:CHAT:SERVER:"+me.id+"님께서 입장하셨습니다.");
+							dos.flush();
 							dos.writeUTF("ROOM:CHAT:SERVER:다음 사람이 입장할때 까지 대기합니다.");
+							dos.flush();
 							sendChatMsg("WAITING:"+roomNum+":CREATED:"+me.id+":"+title,"WAITING");
 							room=me.getRoom();
 						} catch (IOException e) {
@@ -646,6 +685,7 @@ public class Main_Server extends JFrame {
 					}else {
 						try {
 							dos.writeUTF("ROOM0:FAIL");//만드는데 실패했다. 이미 4개의 방이 꽉차있어.
+							dos.flush();
 						} catch (IOException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -658,6 +698,7 @@ public class Main_Server extends JFrame {
 					try {
 						me.setCurrentLocation(msg[0]);
 						dos.writeUTF("ROOM:ENTER:"+msg[0]+":"+me.room.getRoomTitle()+":"+me.getOpponent().getID());
+						dos.flush();
 						
 						roomAppend(msg[0],"[SERVER_ENTER] "+me.id+"님 "+me.room.getRoomNum()+"번방 입장");
 						System.out.println("입장까지 씀. 635");
@@ -677,8 +718,15 @@ public class Main_Server extends JFrame {
 						e.printStackTrace();
 					}
 				}else if(msg[1].equals("EXIT")) {
+					if(room.isPlaying) {
+						me.lostTimesPlus();
+						me.getOpponent().wonTimesPlus();
+					}
 					String changed=gameManager.exitRoom(me,me.currentLocation);
+					
 					sendChatMsg(changed,"WAITING");
+					me.setIsReady(false);
+					
 				}
 				
 			}
@@ -940,10 +988,10 @@ public class Main_Server extends JFrame {
 				@Override
 				public void run() {
 					try {
-						dos=new DataOutputStream(mySocket.getOutputStream());
-						dos.writeUTF(msg);
-						dos.flush();
-						
+				dos=new DataOutputStream(mySocket.getOutputStream());
+				dos.writeUTF(msg);
+				dos.flush();
+				
 					}catch(Exception e) {}
 				}
 			}.start();
@@ -972,7 +1020,7 @@ public class Main_Server extends JFrame {
 						
 						dos.writeUTF(msg);
 						dos.flush();
-						System.out.println("main opo에 메세지 보내졌음 946");
+						System.out.println("main opo에 메세지 보내졌음 946"+msg);
 						roomAppend(me.getCurrentLocation(), me.getOpponent().getID()+"Opo :"+msg);
 						
 					}catch(Exception e) {}

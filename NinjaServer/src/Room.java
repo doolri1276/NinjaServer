@@ -14,6 +14,10 @@ public class Room {
 	DataOutputStream dos;
 	GameManager gameManager;
 	
+	boolean isPlaying;
+	
+	Random rnd;
+	
 	final static int POWERUP=0;
 	final static int HOLD=1;
 	final static int DOUBLEATTACK=2;
@@ -36,6 +40,7 @@ public class Room {
 		this.gameManager=gameManager;
 		state="RWAITING";
 		user.setRoom(this);
+		rnd=new Random();
 		
 		
 	}
@@ -78,7 +83,7 @@ public class Room {
 	}
 	
 	public String getRndItem() {
-		Random rnd=new Random();
+		
 		String iteminfo="GAME:ITEM:";
 		
 		int x=rnd.nextInt(5);

@@ -119,9 +119,12 @@ public class Main_Client extends JFrame {
 			public void windowClosing(WindowEvent e) {
 				
 				super.windowClosing(e);
-				gameRoomPanel.isRunning=false;
+				if(gameRoomPanel!=null)	gameRoomPanel.isRunning=false;
 				try {
+					if(dos!=null) {
 					dos.writeUTF("EXIT");
+					dos.flush();
+					}
 				} catch (IOException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -138,26 +141,33 @@ public class Main_Client extends JFrame {
 			int mX,mY;
 			@Override
 			public void mouseReleased(MouseEvent e) {
-				mX=e.getX();
-				mY=e.getY();
+				if(me==null)return;
+				if(!me.getCurrentLocation().startsWith("ROOM")) return;
+				mX=e.getX()-10;
+				mY=e.getY()-30;
 				if(gameRoomPanel.myTurn) {
+					System.out.println("마이턴ok라 눌림");
 					if(gameRoomPanel.attackable) {
 						
 					}else if(gameRoomPanel.movable) {
 						
 					}else if(gameRoomPanel.roomspickable) {
-						int dx=146;
-						int dy=170;
+					
+						System.out.println("roomspickable이라 눌림");
 					
 						for(int i=0;i<5;i++) {
 							for(int j=0;j<5;j++) {
-								if(gameRoomPanel.getRooms()[i][j].pickable&&(mX>dx&&mY>dy&&mX<dx+64&&mY<dy+64)) {
+								Room room=gameRoomPanel.getRooms()[i][j];
+								if(room.pickable&&room.checkLocation(mX, mY)) {
 									//그러면 눌린다. 눌리는 작요ㅇ
+									System.out.println("눌렸다. "+mX+"    "+mY+"   "+room.getX()+"  "+room.getY());
+									gameRoomPanel.disPickableAll();
+									room.isPicked=true;
+									return;
 								}
-								dx+=70;
+								
 							}
-							dx=146;
-							dy+=70;
+						
 							
 						}
 					}
@@ -392,7 +402,7 @@ public class Main_Client extends JFrame {
 				
 				gameRoomPanel.getBtn_ready().setText("게임 진행중");
 				gameRoomPanel.startShow();
-				gameRoomPanel.pickMyPlace();
+				
 			
 				me.playedTimesPlus();
 				if(msg[2].equals("FIRST")) {
@@ -400,6 +410,7 @@ public class Main_Client extends JFrame {
 				}else {
 					gameRoomPanel.setGameStart(false);
 				}
+				gameRoomPanel.pickMyPlace();
 				
 			}else if(msg[1].equals("ITEM")) {
 				int x=Integer.parseInt(msg[2]);
@@ -407,6 +418,12 @@ public class Main_Client extends JFrame {
 				int type=Integer.parseInt(msg[4]);
 				
 				gameRoomPanel.putItem(x,y,type);
+			}else if(msg[1].equals("FIRSTPICK")) {
+				int ox=Integer.parseInt(msg[2]);
+				int oy=Integer.parseInt(msg[3]);
+				gameRoomPanel.setOpoLocation(ox,oy);
+				if(gameRoomPanel.myTurn)
+					gameRoomPanel.doMyTurn();
 			}
 		}
 		
@@ -767,6 +784,7 @@ public class Main_Client extends JFrame {
 				String msg="SIGNIN:CHECK:"+tf_id.getText()+":"+tf_psw.getText();
 				try {
 					dos.writeUTF(msg);
+					dos.flush();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -790,8 +808,8 @@ public class Main_Client extends JFrame {
 		System.out.println(width+"   "+height);
 
 		add(waitingPanel,BorderLayout.CENTER);
+		if(gameRoomPanel!=null)	gameRoomPanel.isRunning=false;
 		
-		gameRoomPanel.isRunning=false;
 		System.out.println("waiting panel 추가했어요~");
 		revalidate();
 		repaint();
@@ -807,6 +825,7 @@ public class Main_Client extends JFrame {
 		gameRoomPanel=new GameRoomPanel(num,title,me,width,height,dos,this);
 		System.out.println(width+"   "+height);
 
+		
 		add(gameRoomPanel,BorderLayout.CENTER);
 		
 
