@@ -9,7 +9,7 @@ public class NinjaDB {
 	ArrayList<User> userList=new ArrayList<>();
 	
 	File dbFolder=new File("data");
-	File dbFile = new File("data/userDB.txt");
+	File dbFile = new File("data/userDB.dat");
 	
 	//JTextArea ServerA;
 	
@@ -22,7 +22,7 @@ public class NinjaDB {
 			}
 			
 			if(!dbFile.exists()) {
-				dbFile=new File(dbFolder,"userDB.txt");
+				dbFile=new File(dbFolder,"userDB.dat");
 			}
 			
 		}catch(Exception e) {
