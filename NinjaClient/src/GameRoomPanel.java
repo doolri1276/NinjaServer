@@ -117,6 +117,8 @@ public class GameRoomPanel extends JPanel{
 	boolean startImgshow;
 	boolean roomspickable;
 	boolean secondItem;
+	boolean attacked;
+	boolean moved;
 	
 	
 	boolean isRunning;
@@ -193,6 +195,7 @@ public class GameRoomPanel extends JPanel{
 					int y=rnd.nextInt(5);
 					pickedRoom=rooms[x][y];
 					pickedRoom.meExist=true;
+					me.room=pickedRoom;
 					myTurn=tmpTurn;
 					dos.writeUTF("GAME:FIRSTPICK:"+pickedRoom.getXpos()+":"+pickedRoom.getYpos());
 					dos.flush();
@@ -242,6 +245,7 @@ public class GameRoomPanel extends JPanel{
 	
 	public void doMyTurn() {
 		secondItem=true;
+		
 		requestItem();
 		
 	}
@@ -319,11 +323,35 @@ public class GameRoomPanel extends JPanel{
 			if(secondItem) {
 				secondItem=false;
 				requestItem();
+			}else {
+				String msg="GAME:REQUEST:TIMER:ACTION1";
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				doMyAction();
 			}
-			String msg="GAME:REQUEST:TIMER:ACTION1";
-			doMyAction();
 		}
 		
+	}
+	
+	public void itemCheck() {
+		if(me.room.itemExist) {
+			Item i=me.room.getItem();
+			if(i instanceof AttackItem) {
+				if(myAttackItems.size()==3) return;
+				myAttackItems.add((AttackItem)i);
+				me.room.setItem(null);
+				me.room.setItemExist(false);
+			}else {
+				if(myPassiveItems.size()==3) return;
+				myPassiveItems.add((PassiveItem)i);
+				me.room.setItem(null);
+				me.room.setItemExist(false);
+			}
+		}
 	}
 	
 	public void doMyAction(){
@@ -345,10 +373,16 @@ public class GameRoomPanel extends JPanel{
 //		boolean myTimerRunning;
 		
 		System.out.println("내 액션 수행");
+		itemCheck();
 		attackable=true;
 		movable=true;
 		myTimerRunning=true;
 		
+		
+		
+		TimerThread t=new TimerThread();
+		t.start();
+				
 		
 		
 		
@@ -361,12 +395,73 @@ public class GameRoomPanel extends JPanel{
 	
 	
 	class TimerThread extends Thread{
+		boolean isRun;
 		@Override
 		public void run() {
-			// TODO Auto-generated method stub
-			super.run();
+			try {
+				
+				for(int i=19;i>-1;i--) {
+					
+					
+					if(i%2==0) {
+						
+						number=num[i/2];//그림 바꾸고
+						//상대에게 내 시간을 보내주고.
+					}
+					
+					
+					Thread.sleep(500);
+				}
+				
+				//안눌렸으면.. 할 일.
+				
+			}catch(Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
+	
+//	new Thread() {
+//		@Override
+//		public void run() {
+//			try {
+//				Room pickedRoom;
+//				for(int i=19;i>-1;i--) {
+//					pickedRoom=checkPicked();
+//					if(pickedRoom!=null) {
+//						pickedRoom.meExist=true;
+//						myTurn=tmpTurn;
+//						roomspickable=false;
+//						myTimerRunning=false;
+//						dos.writeUTF("GAME:FIRSTPICK:"+pickedRoom.getXpos()+":"+pickedRoom.getYpos());
+//						dos.flush();
+//						
+//						return;
+//					}//눌렸는지 체크
+//					
+//					number=num[i/2];
+//					//그림 바꾸고
+//					Thread.sleep(500);
+//					//한번 잠들고
+//				}
+//				
+//				disPickableAll();
+//				myTimerRunning=false;
+//				Random rnd = new Random();
+//				int x=rnd.nextInt(5);
+//				int y=rnd.nextInt(5);
+//				pickedRoom=rooms[x][y];
+//				pickedRoom.meExist=true;
+//				myTurn=tmpTurn;
+//				dos.writeUTF("GAME:FIRSTPICK:"+pickedRoom.getXpos()+":"+pickedRoom.getYpos());
+//				dos.flush();
+//			}catch(Exception e) {
+//				e.printStackTrace();
+//			}
+//		}
+//	}.start();
+	
+	
 	
 	public void moveItemDrop(){
 		int wh=32;
@@ -769,17 +864,18 @@ public class GameRoomPanel extends JPanel{
 		
 		Color c=new Color(0x975E1F);
 		
-		if(myTurn)	g.setColor(c);
-		else g.setColor(Color.GRAY);
+		
 		
 		if(attackable)g.setColor(c);
 		else g.setColor(Color.GRAY);
+		g.fillRect(20, 513, 91, 29);
 		
 		if(movable)g.setColor(c);
 		else g.setColor(Color.GRAY);
-		
-		g.fillRect(20, 513, 91, 29);
 		g.fillRect(132, 513, 91, 29);
+		
+		if(myTurn)	g.setColor(c);
+		else g.setColor(Color.GRAY);
 		g.fillRect(240, 513, 150, 29);
 		g.fillRect(406, 513, 150, 29);
 		

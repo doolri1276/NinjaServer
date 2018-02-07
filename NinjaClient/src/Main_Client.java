@@ -145,14 +145,13 @@ public class Main_Client extends JFrame {
 				if(!me.getCurrentLocation().startsWith("ROOM")) return;
 				mX=e.getX()-10;
 				mY=e.getY()-30;
+				
+				
 				if(gameRoomPanel.myTurn) {
 					System.out.println("마이턴ok라 눌림");
-					if(gameRoomPanel.attackable) {
-						
-					}else if(gameRoomPanel.movable) {
-						
-					}else if(gameRoomPanel.roomspickable) {
 					
+					if(gameRoomPanel.roomspickable) {
+						
 						System.out.println("roomspickable이라 눌림");
 					
 						for(int i=0;i<5;i++) {
@@ -170,6 +169,49 @@ public class Main_Client extends JFrame {
 						
 							
 						}
+					}else if(gameRoomPanel.attackable) {
+						System.out.println("attackable들어왔다.");
+						if(mX>17&&mX<114&&mY>510&&mY<545) {
+							if(gameRoomPanel.attackClicking) {
+								System.out.println("attack skip 눌렸다!");
+								gameRoomPanel.attackable=false;
+								gameRoomPanel.attackClicking=false;
+								gameRoomPanel.attacked=true;
+								gameRoomPanel.disPickableAll();
+								gameRoomPanel.roomspickable=false;
+								gameRoomPanel.myTimerRunning=false;
+								
+								//아무것도 안했다고 보내야함.
+							}else {
+								System.out.println("attack눌렸다!");
+								gameRoomPanel.attackClicking=true;
+								gameRoomPanel.movable=false;
+								gameRoomPanel.roomspickable=true;
+								gameRoomPanel.pickableAll();
+								
+							}
+						}
+						
+					}else if(gameRoomPanel.movable) {
+						System.out.println("movable들어왔다.");
+						if(mX>129&&mX<226&&mY>510&&mY<545) {
+							if(gameRoomPanel.moveClicking) {
+								gameRoomPanel.movable=false;
+								gameRoomPanel.moveClicking=false;
+								gameRoomPanel.moved=true;
+								gameRoomPanel.disPickableAll();
+								gameRoomPanel.roomspickable=false;
+								gameRoomPanel.myTimerRunning=false;
+							}else {
+								System.out.println("move 눌렸다!");
+								gameRoomPanel.moveClicking=true;
+								gameRoomPanel.attackable=false;
+								gameRoomPanel.roomspickable=true;
+								//gameRoomPanel.pickMovablePlaces();
+							}
+						}
+						
+						
 					}
 					
 				}

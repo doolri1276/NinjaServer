@@ -13,6 +13,9 @@ public class Room {
 	
 	int x,y;
 	
+	public Item getItem() {
+		return item;
+	}
 	
 	public Room(int x,int y,int xx,int yy) {
 		Xpos=x;
@@ -36,6 +39,9 @@ public class Room {
 	
 	public void setItemExist(boolean itemExist) {
 		this.itemExist = itemExist;
+	}
+	public void setItem(Item item) {
+		this.item = item;
 	}
 	
 	
